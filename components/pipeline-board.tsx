@@ -7,15 +7,16 @@ import { Bot, ExternalLink, GripVertical, Loader2, MapPin, MoreHorizontal, Spark
 import Link from "next/link";
 import { useState } from "react";
 import { STATUS_CONFIG } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { buildGoogleMapsUrl, cn } from "@/lib/utils";
 import { LEAD_STATUSES, type Lead, type LeadStatus } from "@/types/database";
 import { Button } from "@/components/ui/button";
 
 function LeadCard({ lead, overlay = false, onQualify, qualifying }: { lead: Lead; overlay?: boolean; onQualify?: (lead: Lead) => void; qualifying?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: lead.id, data: { lead } });
   const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
+  const googleMapsUrl = lead.google_maps_url ?? buildGoogleMapsUrl(lead.name, lead.address);
   return <article ref={setNodeRef} style={style} className={cn("rounded-xl border border-zinc-800 bg-zinc-900 p-3.5 shadow-lg transition", isDragging && !overlay && "opacity-30", overlay && "w-72 rotate-2 border-violet-500/40 shadow-2xl shadow-violet-950")}>
-    <div className="flex items-start gap-2"><button aria-label="Arrastar lead" {...listeners} {...attributes} className="mt-0.5 cursor-grab text-zinc-700 hover:text-zinc-400"><GripVertical className="h-4 w-4" /></button><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><Link href={`/leads/${lead.id}`} className="truncate text-sm font-semibold hover:text-violet-300">{lead.name}</Link><MoreHorizontal className="h-4 w-4 shrink-0 text-zinc-700" /></div><p className="mt-1 flex items-center gap-1 truncate text-[11px] text-zinc-500"><MapPin className="h-3 w-3" />{lead.address ?? "Local não informado"}</p></div></div>
+    <div className="flex items-start gap-2"><button aria-label="Arrastar lead" {...listeners} {...attributes} className="mt-0.5 cursor-grab text-zinc-700 hover:text-zinc-400"><GripVertical className="h-4 w-4" /></button><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><Link href={`/leads/${lead.id}`} className="truncate text-sm font-semibold hover:text-violet-300">{lead.name}</Link><MoreHorizontal className="h-4 w-4 shrink-0 text-zinc-700" /></div><p className="mt-1 flex items-center gap-1 truncate text-[11px] text-zinc-500"><MapPin className="h-3 w-3" />{lead.address ?? "Local não informado"}</p>{!overlay && <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-blue-400 transition hover:text-blue-300 hover:underline">Ver no Google <ExternalLink className="h-3 w-3" /></a>}</div></div>
     <div className="mt-3 flex items-center gap-2">{lead.rating && <span className="flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-[10px] font-semibold text-amber-400"><Star className="h-3 w-3 fill-current" />{lead.rating}</span>}{lead.ai_score !== null && <span className={cn("ml-auto rounded-full px-2 py-1 text-[10px] font-bold", lead.ai_score >= 80 ? "bg-emerald-500/10 text-emerald-400" : lead.ai_score >= 60 ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400")}>Score {lead.ai_score}</span>}</div>
     {lead.ai_summary && <p className="mt-3 line-clamp-2 text-[11px] leading-relaxed text-zinc-500">{lead.ai_summary}</p>}
     {!overlay && <div className="mt-3 border-t border-zinc-800 pt-3"><Button variant="ghost" size="sm" className="w-full text-violet-400 hover:text-violet-300" onClick={() => onQualify?.(lead)} disabled={qualifying}>{qualifying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}{lead.ai_score === null ? "Qualificar com IA" : "Requalificar"}</Button></div>}

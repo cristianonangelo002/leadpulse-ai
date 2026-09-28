@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/api-auth";
+import { buildGoogleMapsUrl } from "@/lib/utils";
 import type { ExtractedLead } from "@/types/database";
 
 const schema = z.object({ query: z.string().min(2).max(120), location: z.string().min(2).max(120), limit: z.number().int().min(1).max(20) });
 interface SerperPlace { cid?: string; placeId?: string; title?: string; address?: string; phoneNumber?: string; website?: string; rating?: number }
 interface GooglePlace { id?: string; displayName?: { text?: string }; formattedAddress?: string; nationalPhoneNumber?: string; websiteUri?: string; rating?: number }
-
-function googleMapsUrl(name: string, address: string | undefined, placeId?: string) {
-  const query = encodeURIComponent([name, address].filter(Boolean).join(", "));
-  const place = placeId ? `&query_place_id=${encodeURIComponent(placeId)}` : "";
-  return `https://www.google.com/maps/search/?api=1&query=${query}${place}`;
-}
 
 export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json()); if (!parsed.success) return NextResponse.json({ error: "Preencha os campos de busca corretamente." }, { status: 400 });
@@ -24,12 +19,12 @@ export async function POST(request: Request) {
     const response = await fetch("https://google.serper.dev/places", { method: "POST", headers: { "X-API-KEY": integration.api_key, "Content-Type": "application/json" }, body: JSON.stringify({ q: searchText, num: parsed.data.limit }), cache: "no-store" });
     if (!response.ok) return NextResponse.json({ error: `A API Serper recusou a busca (${response.status}).` }, { status: 502 });
     const json = await response.json() as { places?: SerperPlace[] };
-    leads = (json.places ?? []).slice(0, parsed.data.limit).map((place, index) => { const name = place.title ?? "Empresa sem nome"; return { externalId: place.placeId ?? place.cid ?? `serper-${index}`, name, phone: place.phoneNumber ?? null, address: place.address ?? null, website: place.website ?? null, rating: place.rating ?? null, googleMapsUrl: googleMapsUrl(name, place.address, place.placeId) }; });
+    leads = (json.places ?? []).slice(0, parsed.data.limit).map((place, index) => { const name = place.title ?? "Empresa sem nome"; return { externalId: place.placeId ?? place.cid ?? `serper-${index}`, name, phone: place.phoneNumber ?? null, address: place.address ?? null, website: place.website ?? null, rating: place.rating ?? null, googleMapsUrl: buildGoogleMapsUrl(name, place.address ?? null, place.placeId) }; });
   } else {
     const response = await fetch("https://places.googleapis.com/v1/places:searchText", { method: "POST", headers: { "X-Goog-Api-Key": integration.api_key, "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.rating", "Content-Type": "application/json" }, body: JSON.stringify({ textQuery: searchText, maxResultCount: parsed.data.limit, languageCode: "pt-BR" }), cache: "no-store" });
     if (!response.ok) return NextResponse.json({ error: `A API Google Places recusou a busca (${response.status}).` }, { status: 502 });
     const json = await response.json() as { places?: GooglePlace[] };
-    leads = (json.places ?? []).map((place, index) => { const name = place.displayName?.text ?? "Empresa sem nome"; return { externalId: place.id ?? `google-${index}`, name, phone: place.nationalPhoneNumber ?? null, address: place.formattedAddress ?? null, website: place.websiteUri ?? null, rating: place.rating ?? null, googleMapsUrl: googleMapsUrl(name, place.formattedAddress, place.id) }; });
+    leads = (json.places ?? []).map((place, index) => { const name = place.displayName?.text ?? "Empresa sem nome"; return { externalId: place.id ?? `google-${index}`, name, phone: place.nationalPhoneNumber ?? null, address: place.formattedAddress ?? null, website: place.websiteUri ?? null, rating: place.rating ?? null, googleMapsUrl: buildGoogleMapsUrl(name, place.formattedAddress ?? null, place.id) }; });
   }
   return NextResponse.json({ leads });
 }

@@ -29,6 +29,7 @@ create table if not exists public.leads (
   phone text,
   address text,
   website text,
+  google_maps_url text,
   rating numeric(2,1) check (rating between 0 and 5),
   status public.lead_status not null default 'capturado',
   ai_score integer check (ai_score between 0 and 100),
@@ -37,6 +38,9 @@ create table if not exists public.leads (
   meeting_notes text,
   created_at timestamptz not null default now()
 );
+
+-- Compatibilidade com bancos criados antes da inclusão do link do Google Maps.
+alter table public.leads add column if not exists google_maps_url text;
 
 create index if not exists leads_user_status_idx on public.leads(user_id, status);
 create index if not exists integrations_user_idx on public.user_integrations(user_id);

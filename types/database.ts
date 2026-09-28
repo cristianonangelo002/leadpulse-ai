@@ -8,6 +8,7 @@ export interface Lead {
   phone: string | null;
   address: string | null;
   website: string | null;
+  google_maps_url: string | null;
   rating: number | null;
   status: LeadStatus;
   ai_score: number | null;

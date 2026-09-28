@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 6% 6.5%;
+    --card-foreground: 0 0% 98%;
+    --primary: 258 90% 66%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 240 4% 12%;
+    --muted-foreground: 240 5% 65%;
+    --border: 240 4% 16%;
+  }
+  * { @apply border-border; }
+  body { @apply bg-background font-sans text-foreground antialiased; }
+}
+
+@layer utilities {
+  .glass { @apply border border-zinc-800/80 bg-zinc-900/70 backdrop-blur-xl; }
+  .text-gradient { @apply bg-gradient-to-r from-violet-300 to-cyan-300 bg-clip-text text-transparent; }
+  .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #3f3f46 transparent; }
+}

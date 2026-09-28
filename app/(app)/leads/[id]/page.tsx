@@ -1,0 +1,19 @@
+import { notFound } from "next/navigation";
+import { ArrowLeft, Bot, ExternalLink, MapPin, Phone, Star } from "lucide-react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { DEMO_LEADS, STATUS_CONFIG } from "@/lib/constants";
+import type { Lead } from "@/types/database";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { LeadNotes } from "@/components/lead-notes";
+
+export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient(); let lead: Lead | null = null;
+  if (supabase) { const { data } = await supabase.from("leads").select("*").eq("id", id).single(); lead = data as Lead | null; } else { lead = DEMO_LEADS.find((item) => item.id === id) ?? DEMO_LEADS[0]; }
+  if (!lead) notFound(); const status = STATUS_CONFIG[lead.status];
+  return <><Button variant="ghost" size="sm" asChild className="mb-5"><Link href="/pipeline"><ArrowLeft className="h-4 w-4" />Voltar ao pipeline</Link></Button><div className="mb-7 flex flex-col justify-between gap-4 md:flex-row md:items-start"><div><div className="mb-3 flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${status.dot}`} /><span className="text-xs font-medium uppercase tracking-wider text-zinc-500">{status.label}</span></div><h1 className="text-3xl font-semibold tracking-tight">{lead.name}</h1><p className="mt-2 flex items-center gap-1 text-sm text-zinc-500"><MapPin className="h-4 w-4" />{lead.address ?? "Endereço não informado"}</p></div>{lead.ai_score !== null && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-6 py-4 text-center"><p className="text-xs uppercase tracking-wider text-emerald-500">AI Score</p><p className="mt-1 text-3xl font-bold text-emerald-400">{lead.ai_score}<span className="text-sm text-emerald-600">/100</span></p></div>}</div>
+    <div className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]"><div className="space-y-5"><Card><CardContent className="pt-5"><h2 className="text-sm font-semibold">Dados do lead</h2><div className="mt-5 space-y-4 text-sm"><div className="flex items-center gap-3 text-zinc-400"><Phone className="h-4 w-4 text-zinc-600" />{lead.phone ?? "Não informado"}</div><div className="flex items-center gap-3 text-zinc-400"><ExternalLink className="h-4 w-4 text-zinc-600" />{lead.website ? <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer" className="truncate text-violet-400 hover:underline">{lead.website}</a> : "Não informado"}</div><div className="flex items-center gap-3 text-zinc-400"><Star className="h-4 w-4 text-amber-500" />{lead.rating ? `${lead.rating} no Google` : "Sem avaliação"}</div></div></CardContent></Card><LeadNotes leadId={lead.id} initialNotes={lead.meeting_notes ?? ""} demo={!supabase} /></div>
+    <div className="space-y-5"><Card className="border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-zinc-900"><CardContent className="pt-5"><div className="flex items-center gap-2 text-violet-300"><Bot className="h-5 w-5" /><h2 className="font-semibold">Análise da IA</h2></div><p className="mt-4 text-sm leading-7 text-zinc-400">{lead.ai_summary ?? "Este lead ainda não foi qualificado. Volte ao pipeline e use a IA para gerar uma análise."}</p></CardContent></Card><Card><CardContent className="pt-5"><div className="flex items-center justify-between"><h2 className="font-semibold">Script de abordagem</h2><span className="rounded-full bg-violet-500/10 px-2 py-1 text-[10px] font-medium text-violet-400">Personalizado</span></div><div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-4 text-sm leading-7 text-zinc-300">{lead.ai_pitch ?? "Qualifique este lead para gerar um pitch de vendas personalizado."}</div></CardContent></Card></div></div></>;
+}

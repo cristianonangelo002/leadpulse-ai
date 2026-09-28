@@ -24,6 +24,7 @@ export interface ExtractedLead {
   address: string | null;
   website: string | null;
   rating: number | null;
+  googleMapsUrl: string;
 }
 
 export type IntegrationProvider = "serper" | "google_places" | "openai" | "gemini";
